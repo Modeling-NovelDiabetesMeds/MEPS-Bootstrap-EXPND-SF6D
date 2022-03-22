@@ -1,0 +1,276 @@
+---
+title: ""
+output: html_document
+---
+
+```{r load-libraries, echo=FALSE, message=FALSE, warning=FALSE}
+library(survey)
+library(tidyverse)
+library(forcats)
+```
+
+#### Impact of Diagnoses and Individual Characteristics on Utility Values (SF-6D)
+
+```{r plot-sf6d, echo=FALSE, message=FALSE, warning=FALSE}
+
+#read matrix of model coefficients
+load('../data/cleaned/MEPS_bootstrap_matrix_sf6d_2022-03-15.Rdata')
+
+#obtain 95% percentiles from bootstraps
+mydata <- data.frame(t(rbind(coef=matrix_sf6d[1001,], 
+                             apply(matrix_sf6d[1:1000,], 2, 
+                                   quantile, probs=c(0.025, 0.975)))))[-c(1,6:12),]
+
+#create dataframe
+mydata$var <- (c("Diabetes", "Heart failure", "Myocardial infarction", "Stroke", 
+                 "Age/10", "Age/10 squared", "Female", 
+                 "Hispanic", "Non-Hispanic Black", "Non-Hispanic Asian",
+                 "Medicare", "Medicaid", "Uninsured", "Other", 
+                 "HS/Other", "College/Higher", "CCI 1+"))
+names(mydata) <- c('coef', 'lower', 'upper', 'var')
+
+# multiply age-coefficients by factor of 10
+mydata[5,1:3] <- mydata[5,1:3]*10
+mydata[6,1:3] <- mydata[6,1:3]*100
+
+#grouping variables
+groups <- c("Diabetes"="Primary Condition",
+            "Heart failure"="Primary Condition",
+            "Myocardial infarction"="Primary Condition",
+            "Stroke"="Primary Condition",
+            "Age/10"="Age", 
+            "Age/10 squared"= "Age", 
+            "Female"= "Gender",
+            "Hispanic"="Race/Ethnicity", 
+            "Non-Hispanic Black"="Race/Ethnicity",
+            "Non-Hispanic Asian"="Race/Ethnicity",
+            "Medicaid"="Insurance Type", 
+            "Medicare"="Insurance Type", 
+            "Uninsured"="Insurance Type", 
+            "Other"="Insurance Type",
+            "HS/Other"="Education", 
+            "College/Higher"="Education",
+            "CCI 1+"= "CCI")
+
+mydata$groups <- groups[as.character(mydata$var)]
+mydata$groups <- factor(mydata$groups, 
+                        c("Primary Condition", "Age", "Gender", 
+                          "Race/Ethnicity", "CCI", 
+                          "Education", "Insurance Type"),
+                        levels=c("Primary Condition", "Age", "Gender", 
+                                 "Race/Ethnicity", "CCI", "Education", "Insurance Type"))
+
+mydata$factor <- factor(mydata$var,
+                        levels=c("Diabetes",
+                                 "Heart failure",
+                                 "Myocardial infarction",
+                                 "Stroke",
+                                 "Age/10", "Age/10 squared",
+                                 "Female", 
+                                 "Non-Hispanic White", 
+                                 "Hispanic", "Non-Hispanic Black", 
+                                 "Non-Hispanic Asian",
+                                 "0", "1+",
+                                 "Less Than HS",
+                                 "HS/Other",
+                                 "College/Higher",
+                                 "Private", 
+                                 "Medicaid", 
+                                 "Medicare", 
+                                 "Uninsured", 
+                                 "Other"), 
+                        ordered=TRUE)
+
+# generate plot
+options(scipen=10000)
+p1 <- ggplot(mydata, aes(y= fct_rev(var), x=coef, fill=groups)) +
+      geom_col(stat = "identity", show.legend=FALSE) +
+      geom_errorbar(aes(xmin=lower,xmax=upper,width=0.2)) +
+      #ggtitle("Impact of Diagnoses and Individual Characteristics on Utility Values (SF-6D)") +
+      labs(x='SF-6D Model Coefficients', y=NULL) +
+      facet_grid(groups~.,scales='free_y',  space= "free", switch="y",
+                 labeller = label_wrap_gen(width =1, multi_line = TRUE))+
+      theme(strip.placement.y = "outside", panel.margin = unit(0, "lines"),
+            strip.text.y = element_text(angle = 0, size = 5),
+            panel.background = element_blank(),
+            strip.background =element_rect(fill=NA,  color = "black"),
+            axis.line = element_line( linetype = "solid"),
+            plot.title = element_text(hjust = 0.5, size=11))
+p1
+```
+
+
+#### Impact of Diagnoses and Individual Characteristics on Total Annual Health Care Expenditures
+
+```{r plot-cost1, echo=FALSE, message=FALSE, warning=FALSE}
+
+rm(list = ls())
+
+# read matrix of model coefficients
+load('../data/cleaned/MEPS_bootstrap_matrix_cost1_2022-03-15.Rdata')
+
+# obtain 95% percentiles from bootstraps
+mydata <- data.frame(exp(t(rbind(coef=matrix_cost1[1001,],
+                                 apply(matrix_cost1[1:1000,], 2, 
+                                       quantile, probs=c(0.025, 0.975))))))[-c(1,6:12),]
+
+# create dataframe
+mydata$var <- (c("Diabetes", "Heart failure", "Myocardial infarction", "Stroke", 
+                 "Age", "Female", "Hispanic", "Non-Hispanic Black", "Non-Hispanic Asian",
+                 "Medicare", "Medicaid", "Uninsured", "Other", 
+                 "HS/Other", "College/Higher", "CCI 1+"))
+names(mydata) <- c('coef', 'lower', 'upper', 'var')
+
+#grouping variables
+groups <- c("Diabetes"="Primary Condition",
+            "Heart failure"="Primary Condition",
+            "Myocardial infarction"="Primary Condition",
+            "Stroke"="Primary Condition",
+            "Age"="Age",
+            "Female"= "Gender",
+            "Hispanic"="Race/Ethnicity", 
+            "Non-Hispanic Black"="Race/Ethnicity",
+            "Non-Hispanic Asian"="Race/Ethnicity",
+            "Medicaid"="Insurance Type", 
+            "Medicare"="Insurance Type", 
+            "Uninsured"="Insurance Type", 
+            "Other"="Insurance Type",
+            "HS/Other"="Education",
+            "College/Higher"="Education",
+            "CCI 1+"= "CCI")
+
+mydata$groups <- groups[as.character(mydata$var)]
+mydata$groups <- factor(mydata$groups, 
+                        c("Primary Condition", "Age", "Gender", "Race/Ethnicity", 
+                          "CCI", "Education", "Insurance Type"),
+                        levels=c("Primary Condition", "Age", "Gender", 
+                                 "Race/Ethnicity", "CCI", "Education", "Insurance Type"))
+
+mydata$factor <- factor(mydata$var,
+                        levels=c("Diabetes",
+                                 "Heart failure",
+                                 "Myocardial infarction",
+                                 "Stroke",
+                                 "Age", 
+                                 "Female", 
+                                 "Non-Hispanic White",
+                                 "Hispanic", 
+                                 "Non-Hispanic Black",
+                                 "Non-Hispanic Asian",
+                                 "0", "1+",
+                                 "Less Than HS",
+                                 "HS/Other", 
+                                 "College/Higher",
+                                 "Private", 
+                                 "Medicaid", 
+                                 "Medicare", 
+                                 "Uninsured",
+                                 "Other"), 
+                        ordered=TRUE)
+
+# generate plot
+options(scipen=10000)
+p2 <- ggplot(mydata, aes(y= fct_rev(var), x=coef, fill=groups)) +
+      geom_col(stat = "identity", show.legend=FALSE) +
+      geom_errorbar(aes(xmin=lower,xmax=upper,width=0.2)) +
+      geom_vline(aes(xintercept=1), lty=2, size=0.2, col="gray45") +
+      ggtitle("Cost Part 1: Logistic Regression") +
+      labs(x='Exponentiated Model Coefficients', y=NULL) +
+      scale_x_continuous(breaks=seq(0,15,1))+
+      facet_grid(groups~.,scales='free_y',  space= "free", switch="y",
+                 labeller = label_wrap_gen(width =1, multi_line = TRUE))+
+      theme(strip.placement.y = "outside", panel.margin = unit(0, "lines"),
+            strip.text.y = element_text(angle = 0, size = 5),
+            panel.background = element_blank(),
+            strip.background =element_rect(fill=NA,  color = "black"),
+            axis.line = element_line( linetype = "solid"),
+            plot.title = element_text(hjust = 0.5, size=11))
+p2
+```
+
+```{r plot-cost2, echo=FALSE, message=FALSE, warning=FALSE}
+
+rm(list = ls())
+
+# read matrix of model coefficients
+load('../data/cleaned/MEPS_bootstrap_matrix_cost2_2022-03-15.Rdata')
+
+# obtain 95% percentiles from bootstraps
+mydata <- data.frame(exp(t(rbind(coef=matrix_cost2[1001,],
+                                 apply(matrix_cost2[1:1000,], 2, 
+                                       quantile, probs=c(0.025, 0.975))))))[-c(1,6:12),]
+
+# create dataframe
+mydata$var <- (c("Diabetes", "Heart failure", "Myocardial infarction", "Stroke", 
+                 "Age", "Female", 
+                 "Hispanic", "Non-Hispanic Black", "Non-Hispanic Asian",
+                 "Medicare", "Medicaid", "Uninsured", "Other", 
+                 "HS/Other", "College/Higher", "CCI 1+"))
+names(mydata) <- c('coef', 'lower', 'upper', 'var')
+
+#grouping variables
+groups <- c("Diabetes"="Primary Condition",
+            "Heart failure"="Primary Condition",
+            "Myocardial infarction"="Primary Condition",
+            "Stroke"="Primary Condition",
+            "Age"="Age",
+            "Female"= "Gender",
+            "Hispanic"="Race/Ethnicity", 
+            "Non-Hispanic Black"="Race/Ethnicity", 
+            "Non-Hispanic Asian"="Race/Ethnicity",
+            "Medicaid"="Insurance Type",
+            "Medicare"="Insurance Type", 
+            "Uninsured"="Insurance Type", 
+            "Other"="Insurance Type",
+            "HS/Other"="Education", 
+            "College/Higher"="Education",
+            "CCI 1+"= "CCI")
+
+mydata$groups <- groups[as.character(mydata$var)]
+mydata$groups <- factor(mydata$groups, 
+                        c("Primary Condition", "Age", "Gender", "Race/Ethnicity", 
+                          "CCI", "Education", "Insurance Type"),
+                        levels=c("Primary Condition", "Age", "Gender", 
+                                 "Race/Ethnicity", "CCI", "Education", "Insurance Type"))
+
+mydata$factor <- factor(mydata$var,
+                        levels=c("Diabetes",
+                                 "Heart failure",
+                                 "Myocardial infarction",
+                                 "Stroke",
+                                 "Age",
+                                 "Female", 
+                                 "Non-Hispanic White",
+                                 "Hispanic", 
+                                 "Non-Hispanic Black", 
+                                 "Non-Hispanic Asian",
+                                 "0", "1+",
+                                 "Less Than HS", 
+                                 "HS/Other", 
+                                 "College/Higher",
+                                 "Private", 
+                                 "Medicaid", 
+                                 "Medicare", 
+                                 "Uninsured",
+                                 "Other"), 
+                        ordered=TRUE)
+
+# generate plot
+options(scipen=10000)
+p3 <- ggplot(mydata, aes(y= fct_rev(var), x=coef, fill=groups)) +
+      geom_col(stat = "identity", show.legend=FALSE) +
+      geom_errorbar(aes(xmin=lower,xmax=upper,width=0.2)) +
+      geom_vline(aes(xintercept=1), lty=2, size=0.2, col="gray45") +
+      ggtitle("Cost Part 2: Gamma Regression") +
+      labs(x='Exponentiated Model Coefficients', y=NULL) +
+      facet_grid(groups~.,scales='free_y',  space= "free", switch="y",
+                 labeller = label_wrap_gen(width =1, multi_line = TRUE))+
+      theme(strip.placement.y = "outside", panel.margin = unit(0, "lines"),
+            strip.text.y = element_text(angle = 0, size = 5),
+            panel.background = element_blank(),
+            strip.background =element_rect(fill=NA,  color = "black"),
+            axis.line = element_line( linetype = "solid"),
+            plot.title = element_text(hjust = 0.5, size=11))
+p3
+```
+

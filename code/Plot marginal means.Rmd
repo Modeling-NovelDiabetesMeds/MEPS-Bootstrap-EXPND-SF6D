@@ -1,0 +1,2045 @@
+---
+title: ""
+output: html_document
+---
+
+```{r load-libraries, echo=FALSE, message=FALSE, warning=FALSE}
+library(survey)
+library(tidyverse)
+library(forcats)
+```
+
+#### Estimated Marginal Means of Utility Values (SF-6D)
+
+```{r plot-sf6d, echo=FALSE, message=FALSE, warning=FALSE}
+
+#load survey data
+Bind_Data  <- readRDS("../data/cleaned/Bind_Data_2022_03_10.rds")
+Bind_Data <- Bind_Data %>% filter(RACETHX!=5)
+Bind_Data$Year <- as.factor(Bind_Data$Year)
+
+#set design
+n_years = length(unique(Bind_Data$Year))
+Bind_Data$LONGWT_n_years <- Bind_Data$LONGWT/n_years #weight patients for the 8 years of data 
+Bind_Data$LONGWT_n_years <- ifelse(is.na(Bind_Data$LONGWT_n_years)==T,0,Bind_Data$LONGWT_n_years)
+
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+
+#subset by age and race/ethnicity
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#fit model
+fit_lm <- svyglm(sf6d ~ DIAB_yn + 
+                   HF_yn +
+                   MI_yn + 
+                   STRK_yn + 
+                   as.factor(Year) + 
+                   AGEY1X + 
+                   I(AGEY1X^2) +
+                   SEX_Classes + 
+                   RACETHX_Classes + 
+                   INSURC_Classes + 
+                   EDUCATION_Classes + 
+                   Charlson_Classes_0_1, 
+                 design= mepsdsgn_subset)
+
+variables=c("DIAB_yn", 
+              "HF_yn",
+              "MI_yn", 
+              "STRK_yn", 
+              "Year", 
+              "AGEY1X", 
+              "SEX_Classes",
+              "RACETHX_Classes", 
+              "INSURC_Classes", 
+              "EDUCATION_Classes", 
+              "Charlson_Classes_0_1",
+              "sf6d")
+
+test_data <-Bind_Data[complete.cases(Bind_Data[variables]),]
+test_data$Year <- '2019' #set everyone equal to last year
+
+#repeat following for all vars at different prespecified values
+
+######################
+
+# PRIMARY CONDITIONS
+# No Diabetes, No CVD
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 0 #xx define all values for which you predict outcome
+test_data_setvar$HF_yn = 0
+test_data_setvar$MI_yn = 0
+test_data_setvar$STRK_yn = 0
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_noDIAB_noCVD = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# No Diabetes, HF only
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 0
+test_data_setvar$HF_yn = 1
+test_data_setvar$MI_yn = 0
+test_data_setvar$STRK_yn = 0
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_noDIAB_HF = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# No Diabetes, MI only
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 0
+test_data_setvar$HF_yn = 0
+test_data_setvar$MI_yn = 1
+test_data_setvar$STRK_yn = 0
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_noDIAB_MI = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# No Diabetes, Stroke only
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 0
+test_data_setvar$HF_yn = 0
+test_data_setvar$MI_yn = 0
+test_data_setvar$STRK_yn = 1
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_noDIAB_STRK = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# No Diabetes, No CVD
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 0
+test_data_setvar$HF_yn = 1
+test_data_setvar$MI_yn = 1
+test_data_setvar$STRK_yn = 1
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_noDIAB_CVD = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# Diabetes, No CVD
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 1
+test_data_setvar$HF_yn = 0
+test_data_setvar$MI_yn = 0
+test_data_setvar$STRK_yn = 0
+
+##predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_DIAB_noCVD = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# Diabetes, HF only
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 1
+test_data_setvar$HF_yn = 1
+test_data_setvar$MI_yn = 0
+test_data_setvar$STRK_yn = 0
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_DIAB_HF = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# Diabetes, MI only
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 1 
+test_data_setvar$HF_yn = 0
+test_data_setvar$MI_yn = 1
+test_data_setvar$STRK_yn = 0
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_DIAB_MI = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# Diabetes, Stroke only
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 1 
+test_data_setvar$HF_yn = 0
+test_data_setvar$MI_yn = 0
+test_data_setvar$STRK_yn = 1
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_DIAB_STRK = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# Diabetes, CVD
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 1 
+test_data_setvar$HF_yn = 1
+test_data_setvar$MI_yn = 1
+test_data_setvar$STRK_yn = 1
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_DIAB_CVD = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+######################
+
+# AGE
+
+###AGE - 45
+test_data_setvar = test_data
+#set var
+test_data_setvar$AGEY1X = 45
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_45 = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+###AGE - 55
+test_data_setvar = test_data
+#set var
+test_data_setvar$AGEY1X = 55
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_55 = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+###AGE - 65
+test_data_setvar = test_data
+#set var
+test_data_setvar$AGEY1X = 65
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_65 = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+###AGE - 75
+test_data_setvar = test_data
+#set var
+test_data_setvar$AGEY1X = 75
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_75 = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+###AGE - 85
+test_data_setvar = test_data
+#set var
+test_data_setvar$AGEY1X = 85 
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_85 = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+######################
+
+# GENDER
+
+#estimate for male gender
+test_data_setvar = test_data
+#set var
+test_data_setvar$SEX_Classes = "Male"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_male = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for female gender
+test_data_setvar = test_data
+#set var
+test_data_setvar$SEX_Classes = "Female"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_female = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+######################
+
+# RACE
+
+#estimate for Non-Hispanic White
+test_data_setvar = test_data
+#set var
+test_data_setvar$RACETHX_Classes = "Non-Hispanic White"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_race_white = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for Hispanic
+test_data_setvar = test_data
+#set var
+test_data_setvar$RACETHX_Classes = "Hispanic"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_race_hispanic = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for Non-Hispanic Black
+test_data_setvar = test_data
+#set var
+test_data_setvar$RACETHX_Classes = "Non-Hispanic Black"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_race_black = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for Non-Hispanic Asian
+test_data_setvar = test_data
+#set var
+test_data_setvar$RACETHX_Classes = "Non-Hispanic Asian"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_race_asian = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+######################
+
+# CCI
+
+#estimate for Charlson score - 0
+test_data_setvar = test_data
+#set var
+test_data_setvar$Charlson_Classes_0_1 = "0"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_charlson_0 = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for Charlson score - 1+
+test_data_setvar = test_data
+#set var
+test_data_setvar$Charlson_Classes_0_1 = "1+"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_charlson_1 = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+######################
+
+# EDUCATION
+
+#estimate for education - less than HS
+test_data_setvar = test_data
+#set var
+test_data_setvar$EDUCATION_Classes = "Less Than HS"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_education_nodegree = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for education - HS/Other
+test_data_setvar = test_data
+#set var
+test_data_setvar$EDUCATION_Classes = "HS/Other"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_education_hs = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for education - College/Higher
+test_data_setvar = test_data
+#set var
+test_data_setvar$EDUCATION_Classes = "College/Higher"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_education_bachelor = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+######################
+
+#estimate for insurance - Private
+test_data_setvar = test_data
+#set var
+test_data_setvar$INSURC_Classes = "Private"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_insurance_private = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for insurance - Medicaid
+test_data_setvar = test_data
+#set var
+test_data_setvar$INSURC_Classes = "Medicaid"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_insurance_medicaid = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+#estimate for insurance - Medicare
+test_data_setvar = test_data
+#set var
+test_data_setvar$INSURC_Classes = "Medicare"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_insurance_medicare = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+#estimate for insurance - Uninsured
+test_data_setvar = test_data
+#set var
+test_data_setvar$INSURC_Classes = "Uninsured"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_insurance_uninsured = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+#estimate for insurance - Other
+test_data_setvar = test_data
+#set var
+test_data_setvar$INSURC_Classes = "Other"
+
+#predict test_data_setvar fit_lm
+fit_lm_predict_setvar <- predict(fit_lm, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictsf6d_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictsf6d_setvar"]=as.numeric(fit_lm_predict_setvar)
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_insurance_other = svymean(~predictsf6d_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+######################
+
+mydata <- data.frame(factor=rep(c("No diabetes, No CVD", 
+                                  "No diabetes, HF only", 
+                                  "No diabetes, MI only", 
+                                  "No diabetes, Stroke only", 
+                                  "No diabetes, CVD",
+                                  "Diabetes, No CVD", 
+                                  "Diabetes, HF only", 
+                                  "Diabetes, MI only", 
+                                  "Diabetes, Stroke only", 
+                                  "Diabetes, CVD", 
+                                  "45", "55", "65", "75", "85", 
+                                  "Male", "Female", 
+                                  "Non-Hispanic White", 
+                                  "Hispanic", 
+                                  "Non-Hispanic Black", 
+                                  "Non-Hispanic Asian",
+                                  "CCI 0", "CCI 1+", 
+                                  "Less Than HS", "HS/Other", "College/Higher",
+                                  "Private", "Medicaid", "Medicare", "Uninsured", "Other")),
+                     cost= c(setvar_noDIAB_noCVD, setvar_noDIAB_HF, setvar_noDIAB_MI, 
+                             setvar_noDIAB_STRK, setvar_noDIAB_CVD, 
+                             setvar_DIAB_noCVD, setvar_DIAB_HF, setvar_DIAB_MI, 
+                             setvar_DIAB_STRK, setvar_DIAB_CVD,
+                             setvar_45, setvar_55, setvar_65, setvar_75, setvar_85, 
+                             setvar_male, setvar_female, 
+                             setvar_race_white, setvar_race_hispanic, setvar_race_black, setvar_race_asian,
+                             setvar_charlson_0, setvar_charlson_1, 
+                             setvar_education_nodegree, setvar_education_hs, setvar_education_bachelor, 
+                             setvar_insurance_private, setvar_insurance_medicaid, 
+                             setvar_insurance_medicare, setvar_insurance_uninsured, 
+                             setvar_insurance_other))
+
+
+#grouping variables
+groups <- c("No diabetes, No CVD"="No Diabetes", 
+            "No diabetes, HF only"="No Diabetes", 
+            "No diabetes, MI only"="No Diabetes", 
+            "No diabetes, Stroke only"="No Diabetes", 
+            "No diabetes, CVD"="No Diabetes",
+            "Diabetes, No CVD"="Diabetes", 
+            "Diabetes, HF only"="Diabetes", 
+            "Diabetes, MI only"="Diabetes", 
+            "Diabetes, Stroke only"="Diabetes",
+            "Diabetes, CVD"="Diabetes",
+            "45"="Age", "55"= "Age", "65"= "Age", "75"= "Age", "85"= "Age", 
+            "Male"= "Gender", "Female"= "Gender",
+            "Non-Hispanic White"="Race/Ethnicity", 
+            "Hispanic"="Race/Ethnicity", 
+            "Non-Hispanic Black"="Race/Ethnicity", 
+            "Non-Hispanic Asian"="Race/Ethnicity",
+            "CCI 0"= "CCI","CCI 1+"= "CCI", 
+            "Less Than HS"="Education", 
+            "HS/Other"="Education", 
+            "College/Higher"="Education",
+            "Private"="Insurance Type", 
+            "Medicaid"="Insurance Type",
+            "Medicare"="Insurance Type",
+            "Uninsured"="Insurance Type", 
+            "Other"="Insurance Type")
+
+mydata$groups <- groups[as.character(mydata$factor)]
+
+mydata$groups <- factor(mydata$groups, 
+                        c("No Diabetes", "Diabetes", "Age", "Gender", 
+                          "Race/Ethnicity", "CCI", "Education", "Insurance Type"),
+                        levels=c("No Diabetes", "Diabetes", "Age", "Gender", 
+                                 "Race/Ethnicity", "CCI", "Education", "Insurance Type"))
+
+mydata$factor <- factor(mydata$factor,
+                        levels=c("No diabetes, No CVD", 
+                                 "No diabetes, HF only", 
+                                 "No diabetes, MI only", 
+                                 "No diabetes, Stroke only",
+                                 "No diabetes, CVD",
+                                 "Diabetes, No CVD", 
+                                 "Diabetes, HF only", 
+                                 "Diabetes, MI only", 
+                                 "Diabetes, Stroke only",
+                                 "Diabetes, CVD",
+                                 "45", "55", "65", "75", "85", 
+                                 "Male", "Female", 
+                                 "Hispanic",
+                                 "Non-Hispanic White", 
+                                 "Non-Hispanic Black", 
+                                 "Non-Hispanic Asian",
+                                 "CCI 0", "CCI 1+",
+                                 "Less Than HS", "HS/Other", "College/Higher",
+                                 "Private", "Medicare", "Medicaid", "Uninsured", "Other"), 
+                        ordered=TRUE)
+
+######################
+
+# CREATE PLOT
+
+options(scipen=10000)
+p1 <- ggplot(mydata, aes(y= fct_rev(factor), x=cost, fill=groups)) +
+      geom_col(stat = "identity", show.legend=FALSE) +
+      labs(x='SF-6D Responses', y=NULL) +
+      facet_grid(groups~.,scales='free_y',  space= "free", switch="y",
+                 labeller = label_wrap_gen(width =1, multi_line = TRUE))+
+      theme(strip.placement.y = "outside", panel.margin = unit(0, "lines"),
+            strip.text.y = element_text(angle = 0, size = 5),
+            panel.background = element_blank(),
+            strip.background =element_rect(fill=NA,  color = "black"),
+            axis.line = element_line( linetype = "solid")) +
+      coord_cartesian(xlim = c(0.35, 1)) +
+      scale_x_continuous(breaks = seq(0.3, 1.0, by=0.1))
+p1
+
+```
+
+#### Estimated Marginal Means of Total Health Care Expenditures
+
+```{r plot-cost, echo=FALSE, message=FALSE, warning=FALSE}
+
+#remove previous plotting objects
+rm(list = ls())
+
+#load survey data
+Bind_Data  <- readRDS("../data/cleaned/Bind_Data_2022_03_10.rds")
+Bind_Data <- Bind_Data %>% filter(RACETHX!=5)
+Bind_Data$Year <- as.factor(Bind_Data$Year)
+
+#set design
+n_years = length(unique(Bind_Data$Year))
+Bind_Data$LONGWT_n_years <- Bind_Data$LONGWT/n_years #to weight patients for the 8 years of data 
+Bind_Data$LONGWT_n_years <- ifelse(is.na(Bind_Data$LONGWT_n_years)==T,0,Bind_Data$LONGWT_n_years)
+
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+
+# subset by age and race/ethnicity
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#fit Two Part Models
+##Part 1:
+fit_binomial <- svyglm(nonzero ~ DIAB_yn + 
+                         HF_yn +
+                         MI_yn + 
+                         STRK_yn + 
+                         as.factor(Year) + 
+                         AGEY1X + 
+                         SEX_Classes + 
+                         RACETHX_Classes + 
+                         INSURC_Classes + 
+                         EDUCATION_Classes +
+                         Charlson_Classes_0_1,
+                       design=mepsdsgn_subset, family=binomial(link="logit"))
+
+##Part 2: 
+mepsdsgntwopart_nonzero <- mepsdsgn_subset %>% subset(nonzero=="1")
+fit_gamma  <- svyglm(AllPayers_Total ~ DIAB_yn + 
+                       HF_yn +
+                       MI_yn + 
+                       STRK_yn + 
+                       as.factor(Year) + 
+                       AGEY1X + 
+                       SEX_Classes + 
+                       RACETHX_Classes + 
+                       INSURC_Classes + 
+                       EDUCATION_Classes + 
+                       Charlson_Classes_0_1,
+                     design=mepsdsgntwopart_nonzero, family=Gamma(link="log"))
+
+variables=c("DIAB_yn", 
+              "HF_yn",
+              "MI_yn", 
+              "STRK_yn", 
+              "Year", 
+              "AGEY1X", 
+              "SEX_Classes",
+              "RACETHX_Classes", 
+              "INSURC_Classes", 
+              "EDUCATION_Classes", 
+              "Charlson_Classes_0_1",
+              "AllPayers_Total",
+              "nonzero")
+
+test_data <- Bind_Data[complete.cases(Bind_Data[variables]),]
+test_data$Year <- '2019' #set everyone equal to last year
+
+#repeat following for all vars at different prespecified values
+
+######################
+
+# PRIMARY CONDITIONS
+
+# No Diabetes, No CVD
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 0 #xx define all ages for which you predict outcome
+test_data_setvar$HF_yn = 0
+test_data_setvar$MI_yn = 0
+test_data_setvar$STRK_yn = 0
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_noDIAB_noCVD = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# No Diabetes, HF only
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 0 
+test_data_setvar$HF_yn = 1
+test_data_setvar$MI_yn = 0
+test_data_setvar$STRK_yn = 0
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_noDIAB_HF = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# No Diabetes, MI only
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 0 
+test_data_setvar$HF_yn = 0
+test_data_setvar$MI_yn = 1
+test_data_setvar$STRK_yn = 0
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+#use correct label for xx 
+setvar_noDIAB_MI = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# No Diabetes, Stroke only
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 0 
+test_data_setvar$HF_yn = 0
+test_data_setvar$MI_yn = 0
+test_data_setvar$STRK_yn = 1
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean 
+setvar_noDIAB_STRK = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# No Diabetes, CVD
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 0 
+test_data_setvar$HF_yn = 1
+test_data_setvar$MI_yn = 1
+test_data_setvar$STRK_yn = 1
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_noDIAB_CVD = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# Diabetes, No CVD
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 1 
+test_data_setvar$HF_yn = 0
+test_data_setvar$MI_yn = 0
+test_data_setvar$STRK_yn = 0
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_DIAB_noCVD = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# Diabetes, HF only
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 1 
+test_data_setvar$HF_yn = 1
+test_data_setvar$MI_yn = 0
+test_data_setvar$STRK_yn = 0
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_DIAB_HF = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# Diabetes, MI only
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 1 
+test_data_setvar$HF_yn = 0
+test_data_setvar$MI_yn = 1
+test_data_setvar$STRK_yn = 0
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_DIAB_MI = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# Diabetes, Stroke only
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 1 
+test_data_setvar$HF_yn = 0
+test_data_setvar$MI_yn = 0
+test_data_setvar$STRK_yn = 1
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_DIAB_STRK = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+# Diabetes, CVD
+test_data_setvar = test_data
+#set var
+test_data_setvar$DIAB_yn = 1 
+test_data_setvar$HF_yn = 1
+test_data_setvar$MI_yn = 1
+test_data_setvar$STRK_yn = 1
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_DIAB_CVD = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+######################
+
+# AGE
+
+###AGE - 45
+test_data_setvar = test_data
+#set var
+test_data_setvar$AGEY1X = 45 
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_45 = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+###AGE - 55
+test_data_setvar = test_data
+#set var
+test_data_setvar$AGEY1X = 55 #xx define all ages for which you predict outcome
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_55 = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+###AGE - 65
+test_data_setvar = test_data
+#set var
+test_data_setvar$AGEY1X = 65 
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_65 = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+###AGE - 75
+test_data_setvar = test_data
+#set var
+test_data_setvar$AGEY1X = 75
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_75 = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+###AGE - 85
+test_data_setvar = test_data
+#set var
+test_data_setvar$AGEY1X = 85 
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_85 = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+######################
+
+# GENDER
+
+#estimate for male gender
+test_data_setvar = test_data
+#set var
+test_data_setvar$SEX_Classes = "Male"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_male = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for female gender
+test_data_setvar = test_data
+#set var
+test_data_setvar$SEX_Classes = "Female"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_female = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+######################
+
+# RACE/ETHNICITY
+
+#estimate for race - Non-Hispanic White
+test_data_setvar = test_data
+#set var
+test_data_setvar$RACETHX_Classes = "Non-Hispanic White"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_race_white = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for race - Hispanic
+test_data_setvar = test_data
+#set var
+test_data_setvar$RACETHX_Classes = "Hispanic"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_race_hispanic = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for race - Non-Hispanic Black
+test_data_setvar = test_data
+#set var
+test_data_setvar$RACETHX_Classes = "Non-Hispanic Black"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_race_black = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for race - Non-Hispanic Asian
+test_data_setvar = test_data
+#set var
+test_data_setvar$RACETHX_Classes = "Non-Hispanic Asian"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_race_asian = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+######################
+
+# CCI
+
+#estimate for Charlson score - 0
+test_data_setvar = test_data
+#set var
+test_data_setvar$Charlson_Classes_0_1 = "0"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_charlson_0 = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for Charlson score - 1+
+test_data_setvar = test_data
+#set var
+test_data_setvar$Charlson_Classes_0_1 = "1+"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_charlson_1 = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+######################
+
+# EDUCATION
+
+#estimate for education - Less Than HS
+test_data_setvar = test_data
+#set var
+test_data_setvar$EDUCATION_Classes = "Less Than HS"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean 
+setvar_education_nodegree = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+#estimate for education - HS/Other
+test_data_setvar = test_data
+#set var
+test_data_setvar$EDUCATION_Classes = "HS/Other"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_education_hs = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for education - College/Higher
+test_data_setvar = test_data
+#set var
+test_data_setvar$EDUCATION_Classes = "College/Higher"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_education_bachelor = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+######################
+
+# INSURANCE
+
+#estimate for insurance - Private
+test_data_setvar = test_data
+#set var
+test_data_setvar$INSURC_Classes = "Private"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_insurance_private = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for insurance - Medicaid
+test_data_setvar = test_data
+#set var
+test_data_setvar$INSURC_Classes = "Medicaid"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean 
+setvar_insurance_medicaid = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+#estimate for insurance - Medicare
+test_data_setvar = test_data
+#set var
+test_data_setvar$INSURC_Classes = "Medicare"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_insurance_medicare = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+#estimate for insurance - Uninsured
+test_data_setvar = test_data
+#set var
+test_data_setvar$INSURC_Classes = "Uninsured"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean
+setvar_insurance_uninsured = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+
+#estimate for insurance - Other
+test_data_setvar = test_data
+#set var
+test_data_setvar$INSURC_Classes = "Other"
+
+#predict test_data_setvar fit_binomial
+fit_binomial_predict_setvar <- predict(fit_binomial, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictnonzero_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictnonzero_setvar"]=as.numeric(fit_binomial_predict_setvar)
+
+#predict test_data_setvar fit_gamma
+fit_gamma_predict_setvar <- predict(fit_gamma, type = "response", newdata = test_data_setvar, na.action=na.exclude)
+Bind_Data$predictgamma_setvar=NA
+Bind_Data[complete.cases(Bind_Data[variables]),"predictgamma_setvar"]=as.numeric(fit_gamma_predict_setvar)
+
+Bind_Data$predictexpenditures_setvar = Bind_Data$predictnonzero_setvar*Bind_Data$predictgamma_setvar
+
+#re-run svydesign
+mepsdsgn = svydesign(id = ~VARPSU,
+                     strata = ~VARSTR,
+                     weights = ~LONGWT_n_years,
+                     data = Bind_Data,
+                     nest = TRUE)
+mepsdsgn_subset <- subset(mepsdsgn, AGEY1X>=45 & RACETHX!=5)
+
+#define mean 
+setvar_insurance_other = svymean(~predictexpenditures_setvar, design=mepsdsgn_subset, na.rm=TRUE)
+
+######################
+
+mydata <- data.frame(factor=rep(c("No diabetes, No CVD", 
+                                  "No diabetes, HF only", 
+                                  "No diabetes, MI only", 
+                                  "No diabetes, Stroke only",
+                                  "No diabetes, CVD",
+                                  "Diabetes, No CVD",
+                                  "Diabetes, HF only", 
+                                  "Diabetes, MI only", 
+                                  "Diabetes, Stroke only", 
+                                  "Diabetes, CVD",
+                                  "45", "55", "65", "75", "85", 
+                                  "Male", "Female", 
+                                  "Non-Hispanic White", 
+                                  "Hispanic", 
+                                  "Non-Hispanic Black",
+                                  "Non-Hispanic Asian",
+                                  "CCI 0", "CCI 1+", 
+                                  "Less Than HS", "HS/Other", "College/Higher",
+                                  "Private", "Medicaid", "Medicare", "Uninsured", "Other")),
+                     cost= c(setvar_noDIAB_noCVD, 
+                             setvar_noDIAB_HF, 
+                             setvar_noDIAB_MI, 
+                             setvar_noDIAB_STRK, 
+                             setvar_noDIAB_CVD,
+                             setvar_DIAB_noCVD, 
+                             setvar_DIAB_HF, 
+                             setvar_DIAB_MI, 
+                             setvar_DIAB_STRK,
+                             setvar_DIAB_CVD,
+                             setvar_45, setvar_55, setvar_65, setvar_75, setvar_85, 
+                             setvar_male, setvar_female,
+                             setvar_race_white, 
+                             setvar_race_hispanic,
+                             setvar_race_black, 
+                             setvar_race_asian,
+                             setvar_charlson_0, setvar_charlson_1, 
+                             setvar_education_nodegree,
+                             setvar_education_hs, 
+                             setvar_education_bachelor, 
+                             setvar_insurance_private, 
+                             setvar_insurance_medicaid, 
+                             setvar_insurance_medicare, 
+                             setvar_insurance_uninsured, 
+                             setvar_insurance_other))
+
+#grouping variables
+groups <- c("No diabetes, No CVD"="No Diabetes", 
+            "No diabetes, HF only"="No Diabetes", 
+            "No diabetes, MI only"="No Diabetes", 
+            "No diabetes, Stroke only"="No Diabetes", 
+            "No diabetes, CVD"="No Diabetes",
+            "Diabetes, No CVD"="Diabetes", 
+            "Diabetes, HF only"="Diabetes",
+            "Diabetes, MI only"="Diabetes", 
+            "Diabetes, Stroke only"="Diabetes",
+            "Diabetes, CVD"="Diabetes",
+            "45"="Age", "55"= "Age", "65"= "Age", "75"= "Age", "85"= "Age", 
+            "Male"= "Gender", "Female"= "Gender",
+            "Non-Hispanic White"="Race/Ethnicity", 
+            "Hispanic"="Race/Ethnicity",
+            "Non-Hispanic Black"="Race/Ethnicity",
+            "Non-Hispanic Asian"="Race/Ethnicity",
+            "CCI 0"= "CCI","CCI 1+"= "CCI", 
+            "Less Than HS"="Education", 
+            "HS/Other"="Education", 
+            "College/Higher"="Education",
+            "Private"="Insurance Type", 
+            "Medicaid"="Insurance Type", 
+            "Medicare"="Insurance Type", 
+            "Uninsured"="Insurance Type",
+            "Other"="Insurance Type")
+
+mydata$groups <- groups[as.character(mydata$factor)]
+
+mydata$groups <- factor(mydata$groups, 
+                        c("No Diabetes", "Diabetes", "Age", "Gender", "Race/Ethnicity",
+                          "CCI", "Education", "Insurance Type"),
+                         levels=c("No Diabetes", "Diabetes", "Age", "Gender",
+                                  "Race/Ethnicity", "CCI", "Education", "Insurance Type"))
+
+mydata$factor <- factor(mydata$factor,
+                        levels=c("No diabetes, No CVD",
+                                 "No diabetes, HF only",
+                                 "No diabetes, MI only", 
+                                 "No diabetes, Stroke only",
+                                 "No diabetes, CVD",
+                                 "Diabetes, No CVD", 
+                                 "Diabetes, HF only", 
+                                 "Diabetes, MI only",
+                                 "Diabetes, Stroke only", 
+                                 "Diabetes, CVD", 
+                                 "45", "55", "65", "75", "85", 
+                                 "Male", "Female", 
+                                 "Hispanic", 
+                                 "Non-Hispanic White",
+                                 "Non-Hispanic Black", 
+                                 "Non-Hispanic Asian",
+                                 "CCI 0", "CCI 1+",
+                                 "Less Than HS", "HS/Other", "College/Higher",
+                                 "Private", "Medicare", "Medicaid", "Uninsured", "Other"), 
+                        ordered=TRUE)
+
+######################
+
+# CREATE PLOT
+
+options(scipen=10000)
+p2 <- ggplot(mydata, aes(y= fct_rev(factor), x=cost, fill=groups)) +
+      geom_col(stat = "identity", show.legend=FALSE) +
+      labs(x='Total Health Care Expenditures', y=NULL) +
+      facet_grid(groups~.,scales='free_y',  space= "free", switch="y",
+                 labeller = label_wrap_gen(width =1, multi_line = TRUE))+
+      theme(strip.placement.y = "outside", panel.margin = unit(0, "lines"),
+            strip.text.y = element_text(angle = 0, size = 5),
+            panel.background = element_blank(),
+            strip.background =element_rect(fill=NA,  color = "black"),
+            axis.line = element_line( linetype = "solid"))
+p2
+
+```
+
