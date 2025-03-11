@@ -8,7 +8,7 @@ MEPS comprises of publicly available, de-identified data from a nationally repre
 
 We define the first year as “baseline” and second year as the one-year “outcome” period. For estimation of annual expenditures and SF-6D utility scores, we use multivariable regression analyses optimized for distribution and link function accounting for the survey sampling design.
 
-Medical expenditures and out-of-pocket costs are adjusted to reflect the most recent financial year using the Personal Consumer Expenditures and Consumer Price Index, respectively. Generic preference-weighted quality of life (“utility”) scores are calculated from the individual-level SF-12 questionnaire data using the Short Form (SF)-6D health utility index.
+Medical expenditures and out-of-pocket costs are adjusted to reflect the most recent financial year using Personal Consumption Expenditures Health and Consumer Price Indexes. Generic preference-weighted quality of life (“utility”) scores are calculated from the individual-level SF-12 questionnaire data using the Short Form (SF)-6D health utility index.
 
 **References**
 
