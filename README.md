@@ -20,6 +20,8 @@ Medical expenditures and out-of-pocket costs are adjusted to reflect the most re
 
 **Acknowledgments**
 
+MEPS datasets are publicly available and can be obtained from https://meps.ahrq.gov/.
+
 Research reported in this repository was supported by the National Heart, Lung, And Blood Institute (NHLBI) of the National Institutes of Health under award number: R01HL153456. The content is solely the responsibility of the authors and does not necessarily represent the official views of the National Institutes of Health.
 
 This work has not been peer-reviewed. The authors have no competing interests to declare.
