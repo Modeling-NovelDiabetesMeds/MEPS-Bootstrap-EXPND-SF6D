@@ -16,6 +16,8 @@ Medical expenditures and out-of-pocket costs are adjusted to reflect the most re
 
 2. Morey JR, Jiang S, Klein S, Max W, Masharani U, Fleischmann KE, Hunink MG, Ferket BS. Estimating health utility scores and expenditures for cardiovascular disease from the Medical Expenditure Panel Survey. Circ Cardiovasc Qual Outcomes. 2021 Mar 25:CIRCOUTCOMES120006769. doi: 10.1161/CIRCOUTCOMES.120.006769.
 
+3. Ferket BS, Hunink MG, Masharani U, Max W, Yeboah J, Fleischmann KE. Cost-effectiveness of coronary artery calcium scoring for cardiovascular disease prevention in diabetes. J Am Heart Assoc. 2025 Aug 29:e041543. doi: 10.1161/JAHA.124.041543.
+
 **Acknowledgments**
 
 Research reported in this repository was supported by the National Heart, Lung, And Blood Institute (NHLBI) of the National Institutes of Health under award number: R01HL153456. The content is solely the responsibility of the authors and does not necessarily represent the official views of the National Institutes of Health.
