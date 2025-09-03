@@ -12,9 +12,9 @@ Medical expenditures and out-of-pocket costs are adjusted to reflect the most re
 
 **References**
 
-1. Klein S, Morey JR, Jiang S, Pai A, Mancini D, Lala A, Ferket BS. Estimated health care utilization and expenditures in individuals with heart failure from the Medical Expenditure Panel Survey. Circ Heart Fail 2021 May 13;CIRCHEARTFAILURE120007763. doi: 10.1161/CIRCHEARTFAILURE.120.007763.
+1. Morey JR, Jiang S, Klein S, Max W, Masharani U, Fleischmann KE, Hunink MG, Ferket BS. Estimating health utility scores and expenditures for cardiovascular disease from the Medical Expenditure Panel Survey. Circ Cardiovasc Qual Outcomes. 2021 Mar 25:CIRCOUTCOMES120006769. doi: 10.1161/CIRCOUTCOMES.120.006769.
 
-2. Morey JR, Jiang S, Klein S, Max W, Masharani U, Fleischmann KE, Hunink MG, Ferket BS. Estimating health utility scores and expenditures for cardiovascular disease from the Medical Expenditure Panel Survey. Circ Cardiovasc Qual Outcomes. 2021 Mar 25:CIRCOUTCOMES120006769. doi: 10.1161/CIRCOUTCOMES.120.006769.
+2. Klein S, Morey JR, Jiang S, Pai A, Mancini D, Lala A, Ferket BS. Estimated health care utilization and expenditures in individuals with heart failure from the Medical Expenditure Panel Survey. Circ Heart Fail 2021 May 13;CIRCHEARTFAILURE120007763. doi: 10.1161/CIRCHEARTFAILURE.120.007763.
 
 3. Ferket BS, Hunink MG, Masharani U, Max W, Yeboah J, Fleischmann KE. Cost-effectiveness of coronary artery calcium scoring for cardiovascular disease prevention in diabetes. J Am Heart Assoc. 2025 Aug 29:e041543. doi: 10.1161/JAHA.124.041543.
 
