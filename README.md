@@ -12,7 +12,7 @@ Medical expenditures and out-of-pocket costs are adjusted to reflect the most re
 
 **References**
 
-1. Morey JR, Jiang S, Klein S, Max W, Masharani U, Fleischmann KE, Hunink MG, Ferket BS. Estimating health utility scores and expenditures for cardiovascular disease from the Medical Expenditure Panel Survey. Circ Cardiovasc Qual Outcomes. 2021 Mar 25:CIRCOUTCOMES120006769. doi: 10.1161/CIRCOUTCOMES.120.006769.
+1. Morey JR, Jiang S, Klein S, Max W, Masharani U, Fleischmann KE, Hunink MG, Ferket BS. Estimating health utility scores and expenditures for cardiovascular disease from the Medical Expenditure Panel Survey. Circ Cardiovasc Qual Outcomes. 2021 Apr;14(4):e006769. doi: 10.1161/CIRCOUTCOMES.120.006769.
 
 2. Klein S, Morey JR, Jiang S, Pai A, Mancini D, Lala A, Ferket BS. Estimated health care utilization and expenditures in individuals with heart failure from the Medical Expenditure Panel Survey. Circ Heart Fail 2021 May 13;CIRCHEARTFAILURE120007763. doi: 10.1161/CIRCHEARTFAILURE.120.007763.
 
